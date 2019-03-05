@@ -51,14 +51,19 @@ if __name__ == "__main__":
     upload_path = "C:/Users/Taiho/Desktop/"  # 업로드 파일 경로
     pdf_file = "test3.pdf"  # 업로드 파일명 + 확장자
 
+
+    #오피스 및 tif 파일 변환 가능 확인
+    #여러장 파일 일 경우 처리 확인
     convertPdfToImage(upload_path, pdf_file)
 
-    filenames = ['C:\\Users\\Taiho\\Desktop\\test3-0.jpg']
-    # filenames = sorted(glob('*.png'))
-    for filename in filenames:
-        print('Checking %s...' % filename)
-        degrees = get_rotation_info(filename)
-        print(degrees)
-        fix_dpi_and_rotation(filename, 2.4, 96)
-        if degrees:
-            fix_dpi_and_rotation(filename, degrees, 96)
+    #auto rotate 기능 확인
+
+    #auto crop 기능 확인
+
+    #image resize 기능 확인
+
+    #noise reduce 기능 연결
+
+    #line delete 기능 연결
+
+    #MS ocr api 호출
