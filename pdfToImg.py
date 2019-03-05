@@ -68,8 +68,6 @@ if __name__ == "__main__":
 
     #image resize 기능 확인
 
-    #noise reduce 기능 연결
-
-    #line delete 기능 연결
+    #noise reduce line delete 기능 연결
 
     #MS ocr api 호출
