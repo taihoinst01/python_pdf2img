@@ -57,6 +57,12 @@ if __name__ == "__main__":
     convertPdfToImage(upload_path, pdf_file)
 
     #auto rotate 기능 확인
+    filenames = ["C:\\Users\\Taiho\\Desktop\\test3-0.jpg"]
+    for filename in filenames:
+        print('Checking %s...' % filename)
+        degrees = get_rotation_info(filename)
+        if degrees:
+            fix_dpi_and_rotation(filename, degrees, DPI)
 
     #auto crop 기능 확인
 
