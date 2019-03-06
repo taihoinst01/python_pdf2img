@@ -12,6 +12,7 @@ import os
 import subprocess
 import PIL.Image as Image
 import http.client, urllib.request, urllib.parse, urllib.error, base64
+import json
 from glob import glob
 
 
@@ -50,8 +51,6 @@ def fix_dpi_and_rotation(filename, degrees, dpi_info):
                              'JPEG', quality=97, dpi=(dpi_info, dpi_info))
 
 def get_Ocr_Info(filePath):
-    result = ""
-
     headers = {
         # Request headers
         'Content-Type': 'application/octet-stream',
@@ -71,12 +70,23 @@ def get_Ocr_Info(filePath):
         conn.request("POST", "/vision/v2.0/ocr?%s" % params, body, headers)
         response = conn.getresponse()
         data = response.read()
-
+        data = json.loads(data)
+        data = ocrParsing(data)
         conn.close()
 
-        return result
+        return data
     except Exception as e:
         print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
+def ocrParsing(body):
+    data = []
+    for i in body["regions"]:
+        for j in i["lines"]:
+            item = ""
+            for k in j["words"]:
+                item += k["text"] + " "
+            data.append({"location":j["boundingBox"], "text":item[:-1]})
+    return data
 
 if __name__ == "__main__":
     upload_path = "C:/Users/Taiho/Desktop/"  # 업로드 파일 경로
@@ -102,4 +112,4 @@ if __name__ == "__main__":
     #noise reduce line delete 기능 연결
 
     #MS ocr api 호출
-    get_Ocr_Info("D:/document/ICR/test.png")
+    ocrData = get_Ocr_Info("D:/document/ICR/test.png")
