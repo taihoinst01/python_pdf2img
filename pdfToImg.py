@@ -11,7 +11,9 @@ from pdf2image import convert_from_path, convert_from_bytes
 import os
 import subprocess
 import PIL.Image as Image
+import http.client, urllib.request, urllib.parse, urllib.error, base64
 from glob import glob
+
 
 # pdf 에서 png 변환 함수
 def convertPdfToImage(upload_path, pdf_file):
@@ -47,6 +49,35 @@ def fix_dpi_and_rotation(filename, degrees, dpi_info):
     im1.rotate(degrees).save('%s' % filename,
                              'JPEG', quality=97, dpi=(dpi_info, dpi_info))
 
+def get_Ocr_Info(filePath):
+    result = ""
+
+    headers = {
+        # Request headers
+        'Content-Type': 'application/octet-stream',
+        'Ocp-Apim-Subscription-Key': 'c4af1927bf124533bcf2bcc92fd4c63d',
+    }
+
+    params = urllib.parse.urlencode({
+        # Request parameters
+        'language': 'unk',
+        'detectOrientation ': 'true',
+    })
+
+    try:
+        body = open(filePath, 'rb').read()
+
+        conn = http.client.HTTPSConnection('japaneast.api.cognitive.microsoft.com')
+        conn.request("POST", "/vision/v2.0/ocr?%s" % params, body, headers)
+        response = conn.getresponse()
+        data = response.read()
+
+        conn.close()
+
+        return result
+    except Exception as e:
+        print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
 if __name__ == "__main__":
     upload_path = "C:/Users/Taiho/Desktop/"  # 업로드 파일 경로
     pdf_file = "test3.pdf"  # 업로드 파일명 + 확장자
@@ -71,3 +102,4 @@ if __name__ == "__main__":
     #noise reduce line delete 기능 연결
 
     #MS ocr api 호출
+    get_Ocr_Info("D:/document/ICR/test.png")
