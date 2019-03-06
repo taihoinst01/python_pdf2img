@@ -13,6 +13,7 @@ import subprocess
 import PIL.Image as Image
 import http.client, urllib.request, urllib.parse, urllib.error, base64
 import json
+import operator
 from glob import glob
 
 
@@ -88,6 +89,74 @@ def ocrParsing(body):
             data.append({"location":j["boundingBox"], "text":item[:-1]})
     return data
 
+# y축 정렬
+def sortArrLocation(inputArr):
+    tempArr = []
+    retArr = []
+    for item in inputArr:
+        tempArr.append((makeindex(item['location']), item))
+    tempArr.sort(key=operator.itemgetter(0))
+    for tempItem in tempArr:
+        retArr.append(tempItem[1])
+    return retArr
+
+def makeindex(location):
+    if len(location) > 0:
+        temparr = location.split(",")
+        for i in range(0, 5):
+            if (len(temparr[0]) < 5):
+                temparr[0] = '0' + temparr[0]
+        return int(temparr[1] + temparr[0])
+    else:
+        return 999999999999
+
+def locationCheck(loc1, loc2, plus, minus):
+    if minus < int(loc1) - int(loc2) < plus:
+        return True
+    else :
+        return False
+
+def bottomCheck(loc1, loc2, num):
+   if int(loc1) - int(loc2) < num:
+       return True
+   else:
+       return False
+
+def compareLabel(inputArr):
+
+    for item in inputArr:
+        yData = []
+        xData = []
+        itemLoc = item["location"].split(",")
+
+        yData.append(item["text"].replace(" ", ""))
+        xData.append(item["text"].replace(" ", ""))
+
+        for data in inputArr:
+            dataLoc = data["location"].split(",")
+
+            # 아래로 4개 문장 가져오기
+            if item != data and bottomCheck(itemLoc[1], dataLoc[1], 2) and locationCheck(itemLoc[0], dataLoc[0], 10, -10) and len(yData) < 4:
+                yData.append(data["text"].replace(" ", ""))
+
+            # 오른쪽으로 4개 문장 가져오기
+            if item != data and bottomCheck(itemLoc[0], dataLoc[0], 2) and locationCheck(itemLoc[1], dataLoc[1], 10, -10) and len(xData) < 4:
+                xData.append(data["text"].replace(" ", ""))
+
+        xText = ""
+        yText = ""
+
+        for x in xData:
+            xText += x + " "
+
+        for y in yData:
+            yText += y + " "
+
+        item["xData"] = xText[:-1]
+        item["yData"] = yText[:-1]
+
+    return inputArr
+
 if __name__ == "__main__":
     upload_path = "C:/Users/Taiho/Desktop/"  # 업로드 파일 경로
     pdf_file = "test3.pdf"  # 업로드 파일명 + 확장자
@@ -112,4 +181,15 @@ if __name__ == "__main__":
     #noise reduce line delete 기능 연결
 
     #MS ocr api 호출
-    ocrData = get_Ocr_Info("D:/document/ICR/test.png")
+    ocrData = get_Ocr_Info("C:/ICR/uploads/test.png")
+    #Y축정렬
+    ocrData = sortArrLocation(ocrData)
+    ocrData = compareLabel(ocrData)
+
+    #label 추출 MS ML 호출
+
+    # entry 추출
+
+
+    for item in ocrData:
+        print(item)
