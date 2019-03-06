@@ -135,12 +135,12 @@ def compareLabel(inputArr):
         for data in inputArr:
             dataLoc = data["location"].split(",")
 
-            # 아래로 4개 문장 가져오기
-            if item != data and bottomCheck(itemLoc[1], dataLoc[1], 2) and locationCheck(itemLoc[0], dataLoc[0], 10, -10) and len(yData) < 4:
+            # 아래로 5개 문장 가져오기
+            if item != data and bottomCheck(itemLoc[1], dataLoc[1], 2) and locationCheck(itemLoc[0], dataLoc[0], 10, -10) and len(yData) < 5:
                 yData.append(data["text"].replace(" ", ""))
 
-            # 오른쪽으로 4개 문장 가져오기
-            if item != data and bottomCheck(itemLoc[0], dataLoc[0], 2) and locationCheck(itemLoc[1], dataLoc[1], 10, -10) and len(xData) < 4:
+            # 오른쪽으로 5개 문장 가져오기
+            if item != data and bottomCheck(itemLoc[0], dataLoc[0], 2) and locationCheck(itemLoc[1], dataLoc[1], 10, -10) and len(xData) < 5:
                 xData.append(data["text"].replace(" ", ""))
 
         xText = ""
@@ -156,6 +156,10 @@ def compareLabel(inputArr):
         item["yData"] = yText[:-1]
 
     return inputArr
+
+def findEntry(ocrData):
+
+    return ocrData
 
 if __name__ == "__main__":
     upload_path = "C:/Users/Taiho/Desktop/"  # 업로드 파일 경로
@@ -181,15 +185,16 @@ if __name__ == "__main__":
     #noise reduce line delete 기능 연결
 
     #MS ocr api 호출
-    ocrData = get_Ocr_Info("C:/ICR/uploads/test.png")
+    ocrData = get_Ocr_Info("C:/ICR/uploads/test.jpg")
     #Y축정렬
     ocrData = sortArrLocation(ocrData)
     ocrData = compareLabel(ocrData)
 
     #label 추출 MS ML 호출
 
-    # entry 추출
 
+    # entry 추출
+    ocrData = findEntry(ocrData)
 
     for item in ocrData:
         print(item)
