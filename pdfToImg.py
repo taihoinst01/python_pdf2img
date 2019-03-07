@@ -14,6 +14,7 @@ import PIL.Image as Image
 import http.client, urllib.request, urllib.parse, urllib.error, base64
 import json
 import operator
+import timeit
 from glob import glob
 
 
@@ -161,7 +162,61 @@ def findEntry(ocrData):
 
     return ocrData
 
+
+def findColByML(ocrData):
+    obj = [{'yData': 'aaa1', 'text': 'bbb1', 'xData': 'ccc1', 'location': 44},
+           {'yData': 'aaa2', 'text': 'bbb2', 'xData': 'ccc2', 'location': 530},
+           {'yData': 'aaa3', 'text': 'bbb3', 'xData': 'ccc3', 'location': 81},
+           {'yData': 'aaa4', 'text': 'bbb4', 'xData': 'ccc4', 'location': 1234},
+           {'yData': 'aaa5', 'text': 'bbb5', 'xData': 'ccc5', 'location': 1039}]
+
+    resultObj = {}
+    colName = ["xData", "yData", "text", "location"]
+    dataArr = []
+    for qq in obj:
+        tmpArr = [qq.get('xData'),
+                  qq.get('yData'),
+                  qq.get('text'),
+                  qq.get('location')
+                  ]
+        dataArr.append(tmpArr)
+
+    resultObj['ColumnNames'] = colName;
+    resultObj['Values'] = dataArr;
+
+    data = {
+        "Inputs": {
+            "input1": resultObj,
+        },
+        "GlobalParameters": {
+        }
+    }
+
+    body = str.encode(json.dumps(data))
+    api_key = 'Glka58B/GkaysKmq01K/1S7zIhiuAPo1k9l1wq/8Z6NjrQGTMJs4cbMXiV0a2Lr5eVggch1aIDQjUDKaCLpYEA=='
+    headers = {'Content-Type': 'application/json', 'Authorization': ('Bearer ' + api_key)}
+    url = 'https://ussouthcentral.services.azureml.net/workspaces/a2de641a3e3a40d7b85125db08cf4a97/services/9ca98ef979444df8b1fcbecc329c46bd/execute?api-version=2.0&details=true'
+
+    req = urllib.request.Request(url, body, headers)
+
+    try:
+        response = urllib.request.urlopen(req)
+
+        result = response.read()
+        # print(json.dumps(result.decode("utf8", 'ignore')))
+        return json.dumps(result.decode("utf8", 'ignore'))
+    except urllib.error.HTTPError as error:
+        # print("The request failed with status code: " + str(error.code))
+
+        # Print the headers - they include the requert ID and the timestamp, which are useful for debugging the failure
+        # print(error.info())
+        # print(json.loads(error.read().decode("utf8", 'ignore')))
+        return json.loads(error.read().decode("utf8", 'ignore'))
+
+
 if __name__ == "__main__":
+    start = timeit.default_timer()  # 소요시간 체크 -시작
+    
     upload_path = "C:/Users/Taiho/Desktop/"  # 업로드 파일 경로
     pdf_file = "test3.pdf"  # 업로드 파일명 + 확장자
 
@@ -191,10 +246,16 @@ if __name__ == "__main__":
     ocrData = compareLabel(ocrData)
 
     #label 추출 MS ML 호출
-
+    labelData = findColByML(ocrData)
+    # entry 추출
+    entryData = findColByML(ocrData)
 
     # entry 추출
     ocrData = findEntry(ocrData)
 
     for item in ocrData:
         print(item)
+
+    # 소요시간 체크 -종료
+    stop = timeit.default_timer()
+    print("---{} second---".format(stop - start))
