@@ -178,11 +178,15 @@ if __name__ == "__main__":
         if degrees:
             fix_dpi_and_rotation(filename, degrees, DPI)
 
-    #auto crop 기능 확인
+    #auto crop 기능 확인 -skip
 
-    #image resize 기능 확인
+    #image resize 기능 확인 - 한기훈
 
-    #noise reduce line delete 기능 연결
+    #noise reduce line delete 기능 연결 - skip
+
+    #doctype 추출 similarity - 임교진
+
+    #레이블 분리 모듈 - 임교진
 
     #MS ocr api 호출
     ocrData = get_Ocr_Info("C:/ICR/uploads/test.jpg")
