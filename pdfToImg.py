@@ -343,11 +343,14 @@ if __name__ == "__main__":
     pdf_file = "test3.pdf"  # 업로드 파일명 + 확장자
 
 
-    #오피스 및 tif 파일 변환 가능 확인
-    #여러장 파일 일 경우 처리 확인
+    #오피스파일의 경우 node에서 변환 후 python으로 전송
+    #tif 파일의 경우 opencv에서 이미지와 동일하게 처리되므로 별도의 처리 필요없음 여러장 처리만 신경쓸 것
+    #pdf 파일일 경우 처리
     # convertPdfToImage(upload_path, pdf_file)
 
-    #auto rotate 기능 확인
+    #auto rotate
+    #fix_dpi_and_rotation의 경우 처리에 한계가 있으므로 (-60도에서 60도만 처리 가능) 
+    #ms ocr을 통해 기울기를 가져온후 미세조정에만 사용
     # filenames = ["C:\\Users\\Taiho\\Desktop\\test3-0.jpg"]
     # for filename in filenames:
     #     print('Checking %s...' % filename)
@@ -357,7 +360,7 @@ if __name__ == "__main__":
 
     #auto crop 기능 확인 -skip
 
-    #image resize 기능
+    #image resize 기능 펑션으로 만들어 호출해서 쓸 것
     FIX_LONG = 3600
     FIX_SHORT = 2400
 
