@@ -15,7 +15,10 @@ import http.client, urllib.request, urllib.parse, urllib.error, base64
 import json
 import operator
 import timeit
+import re
+import math
 from glob import glob
+from difflib import SequenceMatcher
 
 
 # pdf 에서 png 변환 함수
@@ -213,6 +216,125 @@ def findColByML(ocrData):
         # print(json.loads(error.read().decode("utf8", 'ignore')))
         return json.loads(error.read().decode("utf8", 'ignore'))
 
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+def findDocType(ocrData):
+    try:
+        docTypType = 0
+        docType = 0
+        text = []
+        maxNum = 0
+        strText = ''
+
+        file = open('docSentence.txt','r', encoding="UTF8")
+        sentenceList = []
+
+        for line in file:
+            sentence,docType,docTopType = line.strip().split("||")
+            dic = {}
+            dic["sentence"] = sentence
+            dic["docType"] = docType
+            dic["docTopType"] = docTopType
+            sentenceList.append(dic)
+        file.close()
+
+        regExp = "[\{\}\[\]\/?.,;:|\)*~`!^\-_+<>@\#$%&\\\=\(\'\"]"
+
+        for i, item in enumerate(ocrData):
+            text.append(re.sub(regExp, "", item["text"]))
+            strText = ",".join(str(x) for x in text)
+            if i == 20:
+                break
+
+        strText = strText.lower()
+
+        for rows in sentenceList:
+            ratio = similar(strText, rows["sentence"])
+
+            if ratio > maxNum:
+                maxNum = ratio
+                doctype = rows["docType"]
+                docTopType = rows["docTopType"]
+
+        if maxNum > 0.1:
+            return int(docTopType), int(docType)
+        else:
+            return docTopType, docType
+
+    except Exception as ex:
+        raise Exception(str({'code': 500, 'message': 'findDocType error',
+                             'error': str(ex).replace("'", "").replace('"', '')}))
+
+def splitText(text, split):
+    result = []
+
+    while True:
+        find = text.find(split)
+
+        if find == 0:
+            result.append(text[0:len(split)])
+            text = text[len(split):]
+        elif find > 0:
+            result.append(text[0:find])
+            result.append(text[find:find + len(split)])
+            text = text[find + len(split):]
+
+        if find == -1:
+            if len(text) > 0:
+                result.append(text)
+            break
+
+    return result
+
+def splitLabel(ocrData):
+    try:
+        sepKeywordList = []
+
+        # sep_keyword 파일 추출
+        file = open("splitLabel.txt", "r", encoding="UTF8")
+        for line in file:
+            sepKeyword = line.strip()
+            sepKeywordList.append(sepKeyword)
+
+        for keyWord in sepKeywordList:
+            for item in ocrData:
+                if item["text"].replace(" ", "").find(keyWord) > -1:
+
+                    item["text"] = item["text"].replace(" ", "")
+                    textLen = len(item["text"])
+                    location = item["location"].split(",")
+                    value = math.ceil(int(location[2]) / textLen)
+
+                    textList = splitText(item["text"], keyWord)
+                    ocrData.remove(item)
+
+                    findLen = 0
+
+                    for idx, i in enumerate(textList):
+                        dic = {}
+                        dicLoc = ""
+
+                        find = item["text"].find(i, findLen)
+                        findLen += len(i)
+                        width = int(value * find)
+
+                        if idx == 0:
+                            dicLoc = location[0] + "," + location[1] + "," + str(int(value * len(i))) + "," + location[3]
+                        else:
+                            dicLoc = str(int(location[0]) + width) + "," + location[1] + "," + str(
+                                int(value * len(i))) + "," + location[3]
+
+                        dic["location"] = dicLoc
+                        dic["text"] = i
+                        ocrData.append(dic)
+
+        ocrData = sortArrLocation(ocrData)
+        return ocrData
+
+    except Exception as ex:
+        raise Exception(str({'code':500, 'message':'splitLabel error', 'error':str(ex).replace("'","").replace('"','')}))
+
 
 if __name__ == "__main__":
     start = timeit.default_timer()  # 소요시간 체크 -시작
@@ -223,15 +345,15 @@ if __name__ == "__main__":
 
     #오피스 및 tif 파일 변환 가능 확인
     #여러장 파일 일 경우 처리 확인
-    convertPdfToImage(upload_path, pdf_file)
+    # convertPdfToImage(upload_path, pdf_file)
 
     #auto rotate 기능 확인
-    filenames = ["C:\\Users\\Taiho\\Desktop\\test3-0.jpg"]
-    for filename in filenames:
-        print('Checking %s...' % filename)
-        degrees = get_rotation_info(filename)
-        if degrees:
-            fix_dpi_and_rotation(filename, degrees, DPI)
+    # filenames = ["C:\\Users\\Taiho\\Desktop\\test3-0.jpg"]
+    # for filename in filenames:
+    #     print('Checking %s...' % filename)
+    #     degrees = get_rotation_info(filename)
+    #     if degrees:
+    #         fix_dpi_and_rotation(filename, degrees, DPI)
 
     #auto crop 기능 확인 -skip
 
@@ -268,14 +390,18 @@ if __name__ == "__main__":
 
     #noise reduce line delete 기능 연결 - skip
 
-    #doctype 추출 similarity - 임교진
-
-    #레이블 분리 모듈 - 임교진
-
     #MS ocr api 호출
-    ocrData = get_Ocr_Info("C:/ICR/uploads/test.jpg")
+    ocrData = get_Ocr_Info("C:/ICR/uploads/테스트용_산하_2019022811242981.png")
     #Y축정렬
     ocrData = sortArrLocation(ocrData)
+
+    # doctype 추출 similarity - 임교진
+    docTopType, docType = findDocType(ocrData)
+
+    # 레이블 분리 모듈 - 임교진
+    ocrData = splitLabel(ocrData)
+
+    # Y축 데이터 X축 데이터 추출
     ocrData = compareLabel(ocrData)
 
     #label 추출 MS ML 호출
