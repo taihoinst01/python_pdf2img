@@ -235,7 +235,36 @@ if __name__ == "__main__":
 
     #auto crop 기능 확인 -skip
 
-    #image resize 기능 확인 - 한기훈
+    #image resize 기능
+    FIX_LONG = 3600
+    FIX_SHORT = 2400
+
+    img = cv2.imread('2016070614442800.jpg')
+    height, width = img.shape[:2]
+    imagetype = "hori"
+    #배율
+    magnify = 1
+    if width - height > 0:
+        iimagetype = "hori"
+        if (width / height) > (FIX_LONG / FIX_SHORT):
+            magnify = round((FIX_LONG / width) - 0.005, 2)
+        else:
+            magnify = round((FIX_SHORT / height) - 0.005, 2)
+    else:
+        imagetype = "vert"
+        if (height / width) > (FIX_LONG / FIX_SHORT):
+            magnify = round((FIX_SHORT / width) - 0.005, 2)
+        else:
+            magnify = round((FIX_LONG / height) - 0.005, 2)
+
+    #확대, 축소
+    img = cv2.resize(img, dsize=(0, 0), fx=magnify, fy=magnify, interpolation=cv2.INTER_LINEAR)
+    height, width = img.shape[:2]
+    #여백 생성
+    if imagetype == "hori":
+        img = cv2.copyMakeBorder(img, 0, FIX_SHORT - height, 0, FIX_LONG - width, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+    else:
+        img = cv2.copyMakeBorder(img, 0, FIX_LONG - height, 0, FIX_SHORT - width, cv2.BORDER_CONSTANT, value=[255, 255, 255])
 
     #noise reduce line delete 기능 연결 - skip
 
