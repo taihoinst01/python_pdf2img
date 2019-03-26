@@ -336,64 +336,81 @@ def splitLabel(ocrData):
     except Exception as ex:
         raise Exception(str({'code':500, 'message':'splitLabel error', 'error':str(ex).replace("'","").replace('"','')}))
 
+# target이 되는 text를 type 방향으로 가장 근접한 text 스캔
 def scanText(ocrData, target, type):
-    returnObj = ''
-    if type == 'LEFT':
-        yPadding = 0;
-        targetLoc = target["location"].split(",")
-        targetLeftTopLoc = int(targetLoc[1]) - yPadding # 좌상단 y좌표
-        targetLeftBottomLoc = int(targetLoc[1]) + int(targetLoc[3]) + yPadding # 좌하단 y좌표
-        targetXPoint = int(targetLoc[0]) # x좌표 기준점
-        targetYPoint = int(targetLoc[1]) + (int(targetLoc[3]) / 2)  # y좌표 기준점
-
+    try:
+        returnObj = ''
         minDist = 3000
-        for item in ocrData:
-            itemLoc = item["location"].split(",")
-            itemXPoint = int(itemLoc[0]) + int(itemLoc[2])
-            itemYPoint = int(itemLoc[1]) + (int(itemLoc[3]) / 2)
-            if target != item and itemYPoint >= targetLeftTopLoc and itemYPoint <= targetLeftBottomLoc and itemXPoint < targetXPoint:
-                dx = targetXPoint - itemXPoint
-                dy = targetYPoint - itemYPoint
-                currentDist = math.sqrt((dx * dx) + (dy * dy))
-                if currentDist < minDist:
-                    minDist = currentDist
-                    returnObj = item["text"]
-    elif type == 'BOTTOM':
-        xPadding = 0;
-        targetLoc = target["location"].split(",")
-        targetLeftTopLoc = int(targetLoc[0]) - xPadding # 좌상단 x좌표
-        targetRightTopLoc = int(targetLoc[0]) + int(targetLoc[2]) + xPadding # 우상단 x좌표
-        targetXPoint = int(targetLoc[0]) + (int(targetLoc[2]) / 2) # x좌표 기준점
-        targetYPoint = int(targetLoc[1]) + int(targetLoc[3]) # y좌표 기준점
+        if type == 'LEFT':
+            yPadding = 0;
+            targetLoc = target["location"].split(",")
+            targetLeftTopLoc = int(targetLoc[1]) - yPadding # 좌상단 y좌표
+            targetLeftBottomLoc = int(targetLoc[1]) + int(targetLoc[3]) + yPadding # 좌하단 y좌표
+            targetXPoint = int(targetLoc[0]) # x좌표 기준점
+            targetYPoint = int(targetLoc[1]) + (int(targetLoc[3]) / 2)  # y좌표 기준점
 
-        minDist = 3000
-        for item in ocrData:
-            itemLoc = item["location"].split(",")
-            itemXPoint = int(itemLoc[0]) + (int(itemLoc[2]) / 2)
-            itemYPoint = int(itemLoc[1])
-            if target != item and itemXPoint >= targetLeftTopLoc and itemXPoint <= targetRightTopLoc and itemYPoint > targetYPoint:
-                dx = targetXPoint - itemXPoint
-                dy = targetYPoint - itemYPoint
-                currentDist = math.sqrt((dx * dx) + (dy * dy))
-                if currentDist < minDist:
-                    minDist = currentDist
-                    returnObj = item["text"]
-    if returnObj == '':
-        returnObj = 'N'
-    return returnObj
+            for item in ocrData:
+                itemLoc = item["location"].split(",")
+                itemXPoint = int(itemLoc[0]) + int(itemLoc[2])
+                itemYPoint = int(itemLoc[1]) + (int(itemLoc[3]) / 2)
+                if target != item and itemYPoint >= targetLeftTopLoc and itemYPoint <= targetLeftBottomLoc and itemXPoint < targetXPoint:
+                    dx = targetXPoint - itemXPoint
+                    dy = targetYPoint - itemYPoint
+                    currentDist = math.sqrt((dx * dx) + (dy * dy))
+                    if currentDist < minDist:
+                        minDist = currentDist
+                        returnObj = item["text"]
+        elif type == 'BOTTOM':
+            xPadding = 0;
+            targetLoc = target["location"].split(",")
+            targetLeftTopLoc = int(targetLoc[0]) - xPadding # 좌상단 x좌표
+            targetRightTopLoc = int(targetLoc[0]) + int(targetLoc[2]) + xPadding # 우상단 x좌표
+            targetXPoint = int(targetLoc[0]) + (int(targetLoc[2]) / 2) # x좌표 기준점
+            targetYPoint = int(targetLoc[1]) + int(targetLoc[3]) # y좌표 기준점
+
+            for item in ocrData:
+                itemLoc = item["location"].split(",")
+                itemXPoint = int(itemLoc[0]) + (int(itemLoc[2]) / 2)
+                itemYPoint = int(itemLoc[1])
+                if target != item and itemXPoint >= targetLeftTopLoc and itemXPoint <= targetRightTopLoc and itemYPoint > targetYPoint:
+                    dx = targetXPoint - itemXPoint
+                    dy = targetYPoint - itemYPoint
+                    currentDist = math.sqrt((dx * dx) + (dy * dy))
+                    if currentDist < minDist:
+                        minDist = currentDist
+                        returnObj = item["text"]
+        if returnObj == '':
+            returnObj = 'N'
+
+        return returnObj
+    except Exception as ex:
+        raise Exception(str({'code':500, 'message':'scanText( ' + type + ' ) error', 'error':str(ex).replace("'","").replace('"','')}))
 
 def findNearingText(ocrData):
-    for target in ocrData:
-        target["leftText"] = scanText(ocrData, target, "LEFT").replace(" ","")
-        target["bottomText"] = scanText(ocrData, target, "BOTTOM").replace(" ","")
+    try:
+        for target in ocrData:
+            target["leftText"] = scanText(ocrData, target, "LEFT").replace(" ","")
+            target["bottomText"] = scanText(ocrData, target, "BOTTOM").replace(" ","")
 
-    return ocrData
+        return ocrData
+    except Exception as ex:
+        raise Exception(str({'code':500, 'message':'findNearingText error', 'error':str(ex).replace("'","").replace('"','')}))
 
+# ML을 통해 Label 예측
+# DATA : leftText, text, bottomText -> label (공백 : N)
 def predictionLabelByML(ocrData):
     try:
         print()
     except Exception as ex:
         raise Exception(str({'code':500, 'message':'predictionLabelByML error', 'error':str(ex).replace("'","").replace('"','')}))
+
+# ML을 통해 Entry 예측
+# DATA : leftLabel, x, y, topLabel, x, y, diagonalLabel, x, y -> entry (공백 : N)
+def predictionEntryByML(ocrData):
+    try:
+        print()
+    except Exception as ex:
+        raise Exception(str({'code':500, 'message':'predictionEntryByML error', 'error':str(ex).replace("'","").replace('"','')}))
 
 if __name__ == "__main__":
     start = timeit.default_timer()  # 소요시간 체크 -시작
