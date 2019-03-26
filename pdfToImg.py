@@ -17,6 +17,7 @@ import operator
 import timeit
 import re
 import math
+import cv2
 from glob import glob
 from difflib import SequenceMatcher
 
@@ -335,6 +336,64 @@ def splitLabel(ocrData):
     except Exception as ex:
         raise Exception(str({'code':500, 'message':'splitLabel error', 'error':str(ex).replace("'","").replace('"','')}))
 
+def scanText(ocrData, target, type):
+    returnObj = ''
+    if type == 'LEFT':
+        yPadding = 0;
+        targetLoc = target["location"].split(",")
+        targetLeftTopLoc = int(targetLoc[1]) - yPadding # 좌상단 y좌표
+        targetLeftBottomLoc = int(targetLoc[1]) + int(targetLoc[3]) + yPadding # 좌하단 y좌표
+        targetXPoint = int(targetLoc[0]) # x좌표 기준점
+        targetYPoint = int(targetLoc[1]) + (int(targetLoc[3]) / 2)  # y좌표 기준점
+
+        minDist = 3000
+        for item in ocrData:
+            itemLoc = item["location"].split(",")
+            itemXPoint = int(itemLoc[0]) + int(itemLoc[2])
+            itemYPoint = int(itemLoc[1]) + (int(itemLoc[3]) / 2)
+            if target != item and itemYPoint >= targetLeftTopLoc and itemYPoint <= targetLeftBottomLoc and itemXPoint < targetXPoint:
+                dx = targetXPoint - itemXPoint
+                dy = targetYPoint - itemYPoint
+                currentDist = math.sqrt((dx * dx) + (dy * dy))
+                if currentDist < minDist:
+                    minDist = currentDist
+                    returnObj = item["text"]
+    elif type == 'BOTTOM':
+        xPadding = 0;
+        targetLoc = target["location"].split(",")
+        targetLeftTopLoc = int(targetLoc[0]) - xPadding # 좌상단 x좌표
+        targetRightTopLoc = int(targetLoc[0]) + int(targetLoc[2]) + xPadding # 우상단 x좌표
+        targetXPoint = int(targetLoc[0]) + (int(targetLoc[2]) / 2) # x좌표 기준점
+        targetYPoint = int(targetLoc[1]) + int(targetLoc[3]) # y좌표 기준점
+
+        minDist = 3000
+        for item in ocrData:
+            itemLoc = item["location"].split(",")
+            itemXPoint = int(itemLoc[0]) + (int(itemLoc[2]) / 2)
+            itemYPoint = int(itemLoc[1])
+            if target != item and itemXPoint >= targetLeftTopLoc and itemXPoint <= targetRightTopLoc and itemYPoint > targetYPoint:
+                dx = targetXPoint - itemXPoint
+                dy = targetYPoint - itemYPoint
+                currentDist = math.sqrt((dx * dx) + (dy * dy))
+                if currentDist < minDist:
+                    minDist = currentDist
+                    returnObj = item["text"]
+    if returnObj == '':
+        returnObj = 'N'
+    return returnObj
+
+def findNearingText(ocrData):
+    for target in ocrData:
+        target["leftText"] = scanText(ocrData, target, "LEFT").replace(" ","")
+        target["bottomText"] = scanText(ocrData, target, "BOTTOM").replace(" ","")
+
+    return ocrData
+
+def predictionLabelByML(ocrData):
+    try:
+        print()
+    except Exception as ex:
+        raise Exception(str({'code':500, 'message':'predictionLabelByML error', 'error':str(ex).replace("'","").replace('"','')}))
 
 if __name__ == "__main__":
     start = timeit.default_timer()  # 소요시간 체크 -시작
@@ -394,7 +453,7 @@ if __name__ == "__main__":
     #noise reduce line delete 기능 연결 - skip
 
     #MS ocr api 호출
-    ocrData = get_Ocr_Info("C:/ICR/uploads/테스트용_산하_2019022811242981.png")
+    ocrData = get_Ocr_Info("C:/ICR/uploads/test_2019032510532811.png")
     #Y축정렬
     ocrData = sortArrLocation(ocrData)
 
@@ -405,15 +464,16 @@ if __name__ == "__main__":
     ocrData = splitLabel(ocrData)
 
     # Y축 데이터 X축 데이터 추출
-    ocrData = compareLabel(ocrData)
+    #ocrData = compareLabel(ocrData)
+    ocrData = findNearingText(ocrData)
 
     #label 추출 MS ML 호출
-    labelData = findColByML(ocrData)
+    #labelData = findColByML(ocrData)
     # entry 추출
-    entryData = findColByML(ocrData)
+    #entryData = findColByML(ocrData)
 
     # entry 추출
-    ocrData = findEntry(ocrData)
+    #ocrData = findEntry(ocrData)
 
     for item in ocrData:
         print(item)
