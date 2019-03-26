@@ -18,6 +18,9 @@ import timeit
 import re
 import math
 import cv2
+import urllib.request
+import json
+
 from glob import glob
 from difflib import SequenceMatcher
 
@@ -400,7 +403,40 @@ def findNearingText(ocrData):
 # DATA : leftText, text, bottomText -> label (공백 : N)
 def predictionLabelByML(ocrData):
     try:
-        print()
+        input = []
+        for item in ocrData:
+            input.append({
+                "leftText": item["leftText"],
+                "text": item["text"],
+                "bottomText": item["bottomText"],
+                "label": "0"
+            })
+
+        data = {
+            "Inputs": { "input1": input },
+            "GlobalParameters": { }
+        }
+
+        body = str.encode(json.dumps(data))
+
+        url = "https://ussouthcentral.services.azureml.net/workspaces/e41a4a438bd149fa8f43f322f5e7cd9e/services/a19746549d254e15a98c208f65046d74/execute?api-version=2.0&format=swagger"
+        api_key = "0BBbyVo8hragP0gNGgxPvSrNCNqs8slu7J+cs1YMv/ESvw1KFhK03HM/6zn4K0pUzKlBaZno7qNri6Z37MtPbw=="
+        headers = {"Content-Type": "application/json", "Authorization": ("Bearer " + api_key)}
+
+        req = urllib.request.Request(url, body, headers)
+
+        response = urllib.request.urlopen(req)
+
+        result = response.read()
+        resultJson = json.loads(result.decode("utf8", 'ignore'))
+        for mlItem in resultJson["Results"]["output1"]:
+            for ocrItem in ocrData:
+                if mlItem["leftText"] == ocrItem["leftText"] and mlItem["text"] == ocrItem["text"] and mlItem["bottomText"] == ocrItem["bottomText"]:
+                    ocrItem["label"] = mlItem["Scored Labels"]
+
+        return ocrData
+    except urllib.error.HTTPError as error:
+        raise Exception(str({'code': 500, 'message': 'predictionLabelByML error', 'error': str(error).replace("'", "").replace('"', '')}))
     except Exception as ex:
         raise Exception(str({'code':500, 'message':'predictionLabelByML error', 'error':str(ex).replace("'","").replace('"','')}))
 
@@ -486,6 +522,8 @@ if __name__ == "__main__":
 
     #label 추출 MS ML 호출
     #labelData = findColByML(ocrData)
+    ocrData = predictionLabelByML(ocrData)
+
     # entry 추출
     #entryData = findColByML(ocrData)
 
